@@ -20,7 +20,7 @@ mod effects;
 pub mod experimental;
 pub mod ios;
 pub mod patch_builder;
-mod sound_engine;
+pub mod sound_engine;
 pub mod tui;
 mod tuning;
 
