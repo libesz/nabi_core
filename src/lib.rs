@@ -178,6 +178,24 @@ impl SharedMidiState {
         self.midi_to_hz = midi_to_hz;
     }
 
+    /// Replaces the backing [`Shared`] for specific sound CC slots (1-based
+    /// `cc_norm_index`, matching [`CcParam::cc_norm_index`](crate::common::params::CcParam))
+    /// with externally-owned ones, and widens `sound_cc_count` to cover them.
+    ///
+    /// This lets a host (e.g. a physical-knob UI) hand in the exact `Shared`
+    /// it updates when a control moves, so `sound_cc_or_default` picks up
+    /// live changes with no polling/copying — the same zero-copy pattern
+    /// `SharedMidiState` already uses internally for pitch/gate/velocity.
+    pub fn with_sound_cc_shares(mut self, shares: &[(usize, Shared)]) -> Self {
+        for (norm_idx, shared) in shares {
+            if *norm_idx >= 1 && *norm_idx <= MAX_KNOBS_PER_GROUP {
+                self.sound_cc_vals[norm_idx - 1] = shared.clone();
+                self.sound_cc_count = self.sound_cc_count.max(*norm_idx);
+            }
+        }
+        self
+    }
+
     /// Returns the most recent `Note On` pitch, modified by the most recent `Pitch Bend` event.
     pub fn bent_pitch(&self) -> Net {
         Net::wrap(Box::new(var(&self.pitch_bend) * var(&self.pitch)))
